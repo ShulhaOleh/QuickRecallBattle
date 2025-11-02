@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Recall Battle</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Quick Recall Battle</h1>
+            <button class="close-btn" id="closeBtn" onclick="endGameEarly()" title="Закончить досрочно">✕</button>
+        </div>
+        <p class="subtitle">30 секунд • Максимум слов</p>
+
+        <!-- Экран выбора режима -->
+        <div class="screen active" id="startScreen">
+            <div class="start-screen">
+                <div class="mode-buttons">
+                    <button class="mode-btn selected" data-mode="translation">
+                        По переводу
+                    </button>
+                    <button class="mode-btn" data-mode="definition">
+                        По определению
+                    </button>
+                    <button class="mode-btn" data-mode="choice">
+                        Выбор из вариантов
+                    </button>
+                </div>
+                
+                <div class="mode-description" id="modeDescription">
+                    30 секунд на максимум правильных ответов
+                </div>
+                
+                <button class="start-btn" onclick="startGame()">Начать игру</button>
+            </div>
+        </div>
+
+        <!-- Экран игры -->
+        <div class="screen" id="gameScreen">
+            <div class="game-screen">
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-label">Счёт</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Время</div>
+                        <div class="stat-value timer" id="timer">30</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label" id="streakLabel">Подряд</div>
+                        <div class="stat-value" id="streak">0</div>
+                    </div>
+                </div>
+
+                <div class="question-card">
+                    <div class="question-text" id="question"></div>
+                </div>
+
+                <input 
+                    type="text" 
+                    class="answer-input" 
+                    id="answerInput" 
+                    placeholder="Введите ответ..."
+                    autocomplete="off"
+                >
+                
+                <div class="choices" id="choices"></div>
+
+                <button class="submit-btn" id="submitBtn" onclick="checkAnswer()">Проверить</button>
+            </div>
+        </div>
+
+        <!-- Экран результатов -->
+        <div class="screen" id="resultScreen">
+            <div class="result-screen">
+                <div class="result-title" id="resultTitle">🎉 Отлично!</div>
+                
+                <div class="result-stats">
+                    <div class="result-stat">
+                        <span class="result-label">Правильных ответов</span>
+                        <span class="result-value" id="finalCorrect">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-label">Неправильных</span>
+                        <span class="result-value" id="finalWrong">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-label">Макс. подряд</span>
+                        <span class="result-value" id="finalStreak">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="result-label">Точность</span>
+                        <span class="result-value" id="accuracy">0%</span>
+                    </div>
+                </div>
+
+                <div class="feedback" id="feedback"></div>
+
+                <div class="words-table" id="wordsTable"></div>
+
+                <button class="play-again-btn" onclick="resetGame()">Играть ещё раз</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
