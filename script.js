@@ -132,7 +132,7 @@ const modeConfig = {
     choice: {
         description: '6 вопросов по 5 секунд каждый',
         timeLimit: null,
-        timePerQuestion: 5,
+        timePerQuestion: 6,
         questionsLimit: 6
     }
 };
@@ -205,7 +205,7 @@ function updateModeOptions(mode) {
     const overallLabel = document.getElementById('modeOptionOverallLabel');
     if (mode === 'choice') {
         modeOptions.style.display = 'block';
-        perLabel.textContent = `6 вопросов — по ${modeConfig.choice.timePerQuestion} секунд на каждый`;
+        perLabel.textContent = '6 вопросов — по 5 секунд на каждый';
         overallLabel.textContent = '30 секунд — вопросы идут подряд';
         document.getElementById('modeOptionPer').checked = true;
     } else if (mode === 'definition') {
