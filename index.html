@@ -10,11 +10,10 @@
     <div class="container">
         <div class="header">
             <h1>Quick Recall Battle</h1>
-            <button class="close-btn" id="closeBtn" onclick="endGameEarly()" title="Закончить досрочно">✕</button>
+            <button class="close-btn" id="closeBtn" onclick="closeBtnHandler()" title="Закончить досрочно">✕</button>
         </div>
-        <p class="subtitle">30 секунд • Максимум слов</p>
+        
 
-        <!-- Экран выбора режима -->
         <div class="screen active" id="startScreen">
             <div class="start-screen">
                 <div class="mode-buttons">
@@ -29,15 +28,16 @@
                     </button>
                 </div>
                 
-                <div class="mode-description" id="modeDescription">
-                    30 секунд на максимум правильных ответов
+                
+                <div id="modeOptions" style="display:none; margin-bottom:16px; text-align:left; color:#a0a0c0; font-size:14px;">
+                    <label style="display:block; margin-bottom:6px;"><input type="radio" name="modeOption" value="per" id="modeOptionPer" checked> <span id="modeOptionPerLabel">6 вопросов (по 5 секунд каждый)</span></label>
+                    <label style="display:block;"><input type="radio" name="modeOption" value="overall" id="modeOptionOverall"> <span id="modeOptionOverallLabel">30 секунд (вопросы идут подряд)</span></label>
                 </div>
                 
                 <button class="start-btn" onclick="startGame()">Начать игру</button>
             </div>
         </div>
 
-        <!-- Экран игры -->
         <div class="screen" id="gameScreen">
             <div class="game-screen">
                 <div class="stats">
@@ -73,10 +73,9 @@
             </div>
         </div>
 
-        <!-- Экран результатов -->
         <div class="screen" id="resultScreen">
             <div class="result-screen">
-                <div class="result-title" id="resultTitle">🎉 Отлично!</div>
+                <div class="result-title" id="resultTitle">Отлично!</div>
                 
                 <div class="result-stats">
                     <div class="result-stat">

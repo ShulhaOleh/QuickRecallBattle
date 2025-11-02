@@ -24,7 +24,9 @@ const words = {
         { question: "folktale", answer: "сказка" },
         { question: "pinstripe", answer: "полоска" },
         { question: "garnished", answer: "украшенный" },
-        { question: "uncoil", answer: "раскручиваться" }
+        { question: "uncoil", answer: "раскручиваться" },
+        { question: "overripe", answer: "перезревший" },
+        { question: "twofold", answer: "двойной" }
     ],
     definition: [
         { question: "Человек, выступающий против общепринятого мнения", answer: "противник" },
@@ -51,7 +53,9 @@ const words = {
         { question: "Традиционная история из народного творчества", answer: "сказка" },
         { question: "Тонкая вертикальная линия на ткани", answer: "полоска" },
         { question: "Украшенный декоративными элементами", answer: "украшенный" },
-        { question: "Развернуться из свернутого состояния", answer: "раскручиваться" }
+        { question: "Развернуться из свернутого состояния", answer: "раскручиваться" },
+        { question: "Слишком спелый, часто непригодный к употреблению", answer: "перезревший" },
+        { question: "Состоящий из двух частей; двойной", answer: "двойной" }
     ]
 };
 
@@ -67,6 +71,7 @@ let gameState = {
     answeredWords: [],
     timerInterval: null,
     selectedChoice: null,
+    currentAnswered: false,
     questionsTotal: 0,
     questionsAnswered: 0
 };
@@ -92,34 +97,125 @@ const modeConfig = {
     }
 };
 
+const WEIGHTS_KEY = 'quickrecall:weights:v1';
+
+function loadWeightsFromStorage() {
+    try {
+        const raw = localStorage.getItem(WEIGHTS_KEY);
+        if (!raw) return {};
+        return JSON.parse(raw);
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveWeightsToStorage() {
+    try {
+        const map = {};
+        Object.keys(words).forEach(listName => {
+            words[listName].forEach(w => {
+                if (typeof w.weight === 'number') map[`${listName}::${w.question}`] = w.weight;
+            });
+        });
+        localStorage.setItem(WEIGHTS_KEY, JSON.stringify(map));
+    } catch (e) {
+        
+    }
+}
+
+function normalizeWords() {
+    const stored = loadWeightsFromStorage();
+    Object.keys(words).forEach(listName => {
+        words[listName].forEach(w => {
+            if (typeof w.weight !== 'number') w.weight = 1;
+            const key = `${listName}::${w.question}`;
+            if (stored && typeof stored[key] === 'number') {
+                w.weight = stored[key];
+            }
+        });
+    });
+}
+
+function pickWeighted(arr) {
+    const total = arr.reduce((s, it) => s + (it.weight || 0), 0);
+    if (total <= 0) return arr[Math.floor(Math.random() * arr.length)];
+    let r = Math.random() * total;
+    for (let i = 0; i < arr.length; i++) {
+        r -= (arr[i].weight || 0);
+        if (r <= 0) return arr[i];
+    }
+    return arr[arr.length - 1];
+}
+
+normalizeWords();
+
 document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
         gameState.mode = this.dataset.mode;
-        
         const config = modeConfig[gameState.mode];
-        document.getElementById('modeDescription').textContent = config.description;
+        updateModeOptions(gameState.mode);
     });
 });
 
+function updateModeOptions(mode) {
+    const modeOptions = document.getElementById('modeOptions');
+    const perLabel = document.getElementById('modeOptionPerLabel');
+    const overallLabel = document.getElementById('modeOptionOverallLabel');
+    if (mode === 'choice') {
+        modeOptions.style.display = 'block';
+        perLabel.textContent = `6 вопросов — по ${modeConfig.choice.timePerQuestion} секунд на каждый`;
+        overallLabel.textContent = '30 секунд — вопросы идут подряд';
+        document.getElementById('modeOptionPer').checked = true;
+    } else if (mode === 'definition') {
+        modeOptions.style.display = 'block';
+        perLabel.textContent = `6 вопросов — по ${modeConfig.definition.timePerQuestion} секунд на каждый`;
+        overallLabel.textContent = '30 секунд — вопросы идут подряд';
+        document.getElementById('modeOptionPer').checked = true;
+    } else {
+        modeOptions.style.display = 'none';
+    }
+}
+
+updateModeOptions(gameState.mode);
+
 function startGame() {
-    const config = modeConfig[gameState.mode];
-    
+    const baseConfig = modeConfig[gameState.mode];
+    const selectedOption = document.querySelector('input[name="modeOption"]:checked')?.value || 'overall';
+
+    let activeConfig = { timePerQuestion: null, questionsLimit: null, timeLimit: null };
+
+    if (gameState.mode === 'choice' || gameState.mode === 'definition') {
+        if (selectedOption === 'per') {
+            activeConfig.timePerQuestion = baseConfig.timePerQuestion;
+            activeConfig.questionsLimit = baseConfig.questionsLimit;
+            activeConfig.timeLimit = null;
+        } else {
+            activeConfig.timePerQuestion = null;
+            activeConfig.questionsLimit = null;
+            activeConfig.timeLimit = 30;
+        }
+    } else {
+        activeConfig = { timePerQuestion: baseConfig.timePerQuestion, questionsLimit: baseConfig.questionsLimit, timeLimit: baseConfig.timeLimit };
+    }
+
     gameState = {
         mode: gameState.mode,
         score: 0,
         wrong: 0,
         streak: 0,
         maxStreak: 0,
-        timeLeft: config.timePerQuestion || config.timeLimit,
+        timeLeft: activeConfig.timePerQuestion || activeConfig.timeLimit,
         currentWord: null,
         usedWords: [],
         answeredWords: [],
         timerInterval: null,
         selectedChoice: null,
-        questionsTotal: config.questionsLimit || 0,
-        questionsAnswered: 0
+        currentAnswered: false,
+        questionsTotal: activeConfig.questionsLimit || 0,
+        questionsAnswered: 0,
+        activeConfig: activeConfig
     };
 
     showScreen('gameScreen');
@@ -139,8 +235,7 @@ function startTimer() {
         document.getElementById('timer').textContent = gameState.timeLeft;
 
         if (gameState.timeLeft <= 0) {
-            const config = modeConfig[gameState.mode];
-            
+            const config = gameState.activeConfig;
             if (config.timePerQuestion) {
                 handleTimeoutQuestion();
             } else {
@@ -151,8 +246,9 @@ function startTimer() {
 }
 
 function handleTimeoutQuestion() {
-    const config = modeConfig[gameState.mode];
-    
+    const config = gameState.activeConfig;
+    if (gameState.currentAnswered) return;
+
     gameState.answeredWords.push({
         question: gameState.currentWord.question,
         correctAnswer: gameState.currentWord.answer,
@@ -163,6 +259,11 @@ function handleTimeoutQuestion() {
     gameState.wrong++;
     gameState.streak = 0;
     gameState.questionsAnswered++;
+    
+    if (gameState.currentWord && typeof gameState.currentWord.weight === 'number') {
+        gameState.currentWord.weight = Math.min(5, gameState.currentWord.weight / 0.6);
+        saveWeightsToStorage();
+    }
     
     updateStats();
     
@@ -185,10 +286,10 @@ function loadNextWord() {
         return loadNextWord();
     }
 
-    const randomIndex = Math.floor(Math.random() * availableWords.length);
-    gameState.currentWord = availableWords[randomIndex];
+    gameState.currentWord = pickWeighted(availableWords);
     gameState.usedWords.push(gameState.currentWord);
     gameState.selectedChoice = null;
+    gameState.currentAnswered = false;
 
     document.getElementById('question').textContent = gameState.currentWord.question;
     
@@ -200,12 +301,14 @@ function loadNextWord() {
         answerInput.classList.add('hidden');
         choicesContainer.classList.add('visible');
         generateChoices();
+        submitBtn.style.display = 'none';
     } else {
         answerInput.classList.remove('hidden');
         answerInput.value = '';
         answerInput.className = 'answer-input';
         choicesContainer.classList.remove('visible');
         choicesContainer.innerHTML = '';
+        submitBtn.style.display = '';
     }
     
     submitBtn.disabled = false;
@@ -238,16 +341,20 @@ function selectChoice(choice, btn) {
     });
     btn.classList.add('selected');
     gameState.selectedChoice = choice;
+    if (gameState.mode === 'choice') {
+        checkAnswer();
+    }
 }
 
 function checkAnswer() {
     const correctAnswer = gameState.currentWord.answer.toLowerCase();
-    const config = modeConfig[gameState.mode];
+    const config = gameState.activeConfig;
     let userAnswer, isCorrect;
     
     if (gameState.mode === 'choice') {
         if (!gameState.selectedChoice) return;
         
+        gameState.currentAnswered = true;
         userAnswer = gameState.selectedChoice;
         isCorrect = userAnswer.toLowerCase() === correctAnswer;
         
@@ -266,9 +373,12 @@ function checkAnswer() {
         
         if (userAnswer === '') return;
         
+        gameState.currentAnswered = true;
         isCorrect = userAnswer.toLowerCase() === correctAnswer;
         input.className = isCorrect ? 'answer-input correct' : 'answer-input wrong';
     }
+
+    gameState.currentAnswered = true;
 
     gameState.answeredWords.push({
         question: gameState.currentWord.question,
@@ -281,9 +391,17 @@ function checkAnswer() {
         gameState.score++;
         gameState.streak++;
         gameState.maxStreak = Math.max(gameState.maxStreak, gameState.streak);
+        if (gameState.currentWord && typeof gameState.currentWord.weight === 'number') {
+            gameState.currentWord.weight = Math.max(0.1, gameState.currentWord.weight * 0.6);
+            saveWeightsToStorage();
+        }
     } else {
         gameState.wrong++;
         gameState.streak = 0;
+        if (gameState.currentWord && typeof gameState.currentWord.weight === 'number') {
+            gameState.currentWord.weight = Math.min(5, gameState.currentWord.weight / 0.6);
+            saveWeightsToStorage();
+        }
     }
 
     if (config.questionsLimit) {
@@ -313,13 +431,13 @@ function checkAnswer() {
 function updateStats() {
     document.getElementById('score').textContent = gameState.score;
     document.getElementById('streak').textContent = gameState.streak;
-    
-    const config = modeConfig[gameState.mode];
+    const config = gameState.activeConfig;
     const streakLabel = document.getElementById('streakLabel');
     
     if (config.questionsLimit) {
         streakLabel.textContent = 'Вопрос';
-        document.getElementById('streak').textContent = `${gameState.questionsAnswered + 1}/${gameState.questionsTotal}`;
+        const currentQuestion = Math.min(gameState.questionsAnswered + 1, gameState.questionsTotal);
+        document.getElementById('streak').textContent = `${currentQuestion}/${gameState.questionsTotal}`;
     } else {
         streakLabel.textContent = 'Подряд';
         document.getElementById('streak').textContent = gameState.streak;
@@ -404,6 +522,15 @@ function displayWordsTable() {
 function endGameEarly() {
     if (confirm('Вы уверены, что хотите закончить досрочно?')) {
         endGame();
+    }
+}
+
+function closeBtnHandler() {
+    const resultScreen = document.getElementById('resultScreen');
+    if (resultScreen.classList.contains('active')) {
+        resetGame();
+    } else {
+        endGameEarly();
     }
 }
 

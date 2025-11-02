@@ -39,7 +39,8 @@ h1 {
 
 .close-btn {
     position: absolute;
-    right: 0;
+    top: 12px;
+    right: 12px;
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -446,4 +447,78 @@ h1 {
 
 .play-again-btn:active {
     transform: scale(0.98);
+}
+
+/* Custom styled radio and checkbox inputs used in mode options and elsewhere */
+label {
+    cursor: pointer;
+}
+
+label input[type="radio"],
+label input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #00d4ff;
+    background: #1a1a2e;
+    vertical-align: middle;
+    margin-right: 10px;
+    position: relative;
+    display: inline-block;
+    border-radius: 50%;
+    transition: background .12s, box-shadow .12s;
+}
+
+label input[type="checkbox"] {
+    border-radius: 4px;
+}
+
+label input[type="radio"]::after,
+label input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    transition: opacity .12s, transform .12s;
+    opacity: 0;
+}
+
+label input[type="radio"]::after {
+    left: 5px;
+    top: 5px;
+    width: 6px;
+    height: 6px;
+    background: #1a1a2e;
+    border-radius: 50%;
+}
+
+label input[type="checkbox"]::after {
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid #1a1a2e;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+label input[type="radio"]:checked {
+    background: #00d4ff;
+}
+
+label input[type="radio"]:checked::after {
+    opacity: 1;
+}
+
+label input[type="checkbox"]:checked {
+    background: #00d4ff;
+}
+
+label input[type="checkbox"]:checked::after {
+    opacity: 1;
+}
+
+label input[type="radio"]:focus,
+label input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 4px rgba(0,212,255,0.12);
+    outline: none;
 }
